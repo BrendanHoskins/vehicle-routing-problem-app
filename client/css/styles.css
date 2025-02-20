@@ -1,0 +1,207 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.input-section {
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+/* Address Section */
+.address-section .form-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.address-section .form-group input {
+  padding: 8px;
+  width: 70%;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.address-section .form-group button {
+  padding: 8px 15px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.address-section .form-group button:hover {
+  background-color: #1976d2;
+}
+
+.address-list {
+  margin-top: 10px;
+}
+
+.address-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #e3f2fd;
+  margin-bottom: 5px;
+  border-radius: 4px;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  padding: 8px;
+  width: 200px;
+}
+
+.form-group input[type="file"] {
+  padding: 8px;
+  width: 100%;
+  max-width: 300px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  display: none;
+}
+
+.file-upload-btn {
+  padding: 8px 15px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.file-upload-btn:hover {
+  background-color: #45a049;
+}
+
+button {
+  padding: 8px 15px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.results-section {
+  margin-top: 20px;
+}
+
+.route {
+  background-color: #f5f5f5;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.route-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.stop {
+  margin-left: 20px;
+  padding: 5px 0;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 20px;
+  border: 1px solid #ef9a9a;
+}
+
+.section-container {
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.section-header {
+  background-color: #f5f5f5;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.section-content {
+  padding: 20px;
+  display: none;
+}
+
+.section-container.active .section-content {
+  display: block;
+}
+
+.column-mapping {
+  margin-top: 20px;
+}
+
+.mapping-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mapping-row select {
+  margin-left: 10px;
+  padding: 5px;
+}
+
+#map {
+  height: 500px;
+  width: 100%;
+  margin: 20px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.route-details {
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.results-section.active {
+  display: block;
+}
+
+.results-section {
+  display: none;
+}
