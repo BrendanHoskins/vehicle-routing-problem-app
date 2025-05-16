@@ -8,6 +8,9 @@ app = Flask(__name__)
 app.register_blueprint(vrp_bp, url_prefix='/api/vrp')
 app.register_blueprint(csv_bp, url_prefix='/api/csv')
 
+# Get the absolute path to the client directory
+CLIENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'client'))
+
 # Serve index.html
 @app.route('/')
 def serve_index():
@@ -24,12 +27,12 @@ def serve_index():
 # Serve CSS files
 @app.route('/css/<path:filename>')
 def serve_css(filename):
-    return send_from_directory('../client/css', filename)
+    return send_from_directory(os.path.join(CLIENT_DIR, 'css'), filename)
 
 # Serve JavaScript files
 @app.route('/js/<path:filename>')
 def serve_js(filename):
-    return send_from_directory('../client/js', filename)
+    return send_from_directory(os.path.join(CLIENT_DIR, 'js'), filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -9,49 +9,12 @@
   <body>
     <div class="container">
       <h1>VRP Calculator</h1>
-
-      <div class="section-container file-upload-section active">
-        <div class="section-header">
-          <h2>File Upload</h2>
-        </div>
-        <div class="section-content">
-          <div class="form-group">
-            <input type="file" id="csvFile" accept=".csv" />
-            <button
-              type="button"
-              class="file-upload-btn"
-              onclick="document.getElementById('csvFile').click()"
-            >
-              Choose CSV File
-            </button>
-          </div>
-
-          <div id="columnMapping" class="column-mapping" style="display: none">
-            <h3>Map Columns</h3>
-            <div class="mapping-container"></div>
-            <button id="calculateButton" disabled>Calculate Route</button>
-          </div>
-        </div>
+      <div class="file-upload-section">
+        <h2>File Upload</h2>
+        <div id="fileUploadFlex" class="file-upload-flex"></div>
       </div>
-
-      <div class="section-container results-section">
-        <div class="section-header">
-          <h2>Calculated Route</h2>
-        </div>
-        <div class="section-content">
-          <div id="map"></div>
-          <div id="route-details"></div>
-        </div>
-      </div>
+      <button id="submitButton" disabled>Calculate Route</button>
     </div>
     <script type="module" src="/js/main.js"></script>
-    <script>
-      function initGoogleMapsCallback() {
-        // This will be called when Google Maps is fully loaded
-        window.googleMapsLoaded = true;
-        if (window.initMap) window.initMap();
-      }
-    </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=%GOOGLE_MAPS_API_KEY%&libraries=places,geometry&loading=async&callback=initGoogleMapsCallback"></script>
   </body>
 </html>

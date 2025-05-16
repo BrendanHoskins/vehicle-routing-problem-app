@@ -1,8 +1,5 @@
-
-
-
-def distance_callback(from_index, to_index, manager, data):
-    """Returns the distance between the two nodes."""
-    from_node = manager.IndexToNode(from_index)
-    to_node = manager.IndexToNode(to_index)
-    return data["distance_matrix"][from_node][to_node]
+def distance_callback(from_index, to_index, manager, distance_matrix_data):
+    """Return the distance between two nodes from the matrix."""
+    origin = manager.IndexToNode(from_index)
+    destination = manager.IndexToNode(to_index)
+    return int(distance_matrix_data["matrix"][origin][destination])

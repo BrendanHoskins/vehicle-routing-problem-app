@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.csv.parse_csv_file import parse_csv_files
+from server.services.csv.handle_csv_files import CSVProcessor
 
 csv_bp = Blueprint('csv', __name__)
 
@@ -10,7 +10,7 @@ def upload_csv_route():
             return jsonify({'error': 'No file provided'}), 400
 
         files = {'file1': request.files['csv']}
-        parsed_files = parse_csv_files(files)
+        parsed_files = CSVProcessor.parse_csv_files(files)
 
         if not parsed_files:
             return jsonify({'error': 'Failed to parse CSV file'}), 400

@@ -12,7 +12,9 @@
       },
       "args": ["run", "--no-debugger", "--no-reload"],
       "jinja": true,
-      "justMyCode": true
+      "justMyCode": true,
+      "console": "integratedTerminal",
+      "redirectOutput": true
     }
   ]
 }
