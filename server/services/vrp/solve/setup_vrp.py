@@ -68,16 +68,65 @@ def setup_vrp(csv_data, distance_matrix_data):
             logger.error(f"Error adding weight dimension: {str(e)}")
             raise
         
+        # --- START: Add penalties for dropping nodes (for debugging) ---
+        penalty = 1000000  # A large cost for dropping a node
+        skipped_penalty_nodes_count = 0
+        added_penalty_nodes_count = 0
+
+        # Iterate through your actual location indices (0 to N-1)
+        for matrix_index in range(len(distance_matrix_data["locations"])):
+            # Check if this matrix_index is a vehicle start or end node
+            is_vehicle_start_or_end = False
+            if matrix_index in distance_matrix_data["vehicle_starts"] or \
+               matrix_index in distance_matrix_data["vehicle_ends"]:
+                is_vehicle_start_or_end = True
+            
+            # We only add disjunctions for non-start/end nodes that are *supposed* to be visited
+            # (i.e., those that would generate demand in your callbacks)
+            if not is_vehicle_start_or_end:
+                loc_data = distance_matrix_data["locations"][matrix_index]
+                node_type = loc_data.get("type", "")
+                
+                is_demand_node = False
+                # Now delivery_current is also a demand node (pickup from depot)
+                if node_type == "pickup_current" or \
+                   node_type == "pickup_destination" or \
+                   node_type == "delivery_destination" or \
+                   node_type == "delivery_current":
+                    is_demand_node = True
+
+                if is_demand_node:
+                    # Convert your matrix_index to the solver's internal index for this node
+                    try:
+                        solver_node_index = manager.NodeToIndex(matrix_index)
+                        routing.AddDisjunction([solver_node_index], penalty)
+                        # logger.debug(f"Added disjunction for matrix index {matrix_index} (solver index {solver_node_index}) with penalty {penalty}")
+                        added_penalty_nodes_count +=1
+                    except Exception as e:
+                        # This can happen if a matrix_index is not actually part of the routing model 
+                        # (e.g. if it was a duplicate address that got mapped to another index by the manager, though unlikely with your setup)
+                        # or if NodeToIndex fails for some other reason.
+                        logger.error(f"Could not get solver index for matrix_index {matrix_index} to add disjunction: {e}")
+                else:
+                    skipped_penalty_nodes_count +=1
+            else:
+                skipped_penalty_nodes_count +=1
+        
+        logger.info(f"Disjunctions: Added for {added_penalty_nodes_count} demand nodes, skipped for {skipped_penalty_nodes_count} (vehicle start/end or no-demand) nodes.")
+        # --- END: Add penalties for dropping nodes ---
+        
         # Try with pickup/delivery constraints, but handle possible errors
         try:
-            add_pickup_delivery_constraints(routing, manager, distance_matrix_data,
-                                          volume_dim_name="Volume",
-                                          weight_dim_name="Weight")
-            logger.debug("Pickup delivery constraints added successfully")
+            # TEMPORARILY COMMENTED OUT FOR DEBUGGING INFEASIBILITY
+            # add_pickup_delivery_constraints(routing, manager, distance_matrix_data,
+            #                               volume_dim_name="Volume",
+            #                               weight_dim_name="Weight")
+            # logger.debug("Pickup delivery constraints added successfully (SKIPPED FOR DEBUGGING)")
+            logger.warning("Pickup delivery constraints SKIPPED FOR DEBUGGING INFEASIBILITY")
         except Exception as e:
             logger.error(f"Error adding pickup delivery constraints: {str(e)}")
             # Continue without these constraints, but log the error
-            logger.warning("Continuing without pickup/delivery constraints")
+            logger.warning("Continuing without pickup/delivery constraints due to error during their setup.")
         
         logger.debug("Successfully set up VRP model")
         return routing, manager

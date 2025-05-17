@@ -38,10 +38,18 @@ def add_pickup_delivery_constraints(routing, manager, distance_matrix_data,
             loc_type = loc["type"]
             real_idx = loc["index"]  # The deduplicated index in the matrix
             
-            if loc_type in ["pickup_current", "delivery_current"]:
-                location_map.setdefault((id_, loc_type.split("_")[0]), {})["current"] = real_idx
-            elif loc_type in ["pickup_destination", "delivery_destination"]:
-                location_map.setdefault((id_, loc_type.split("_")[0]), {})["destination"] = real_idx
+            # Ensure key format matches typical P&D task types (e.g. "pickup" or "delivery" task)
+            task_type_key = None
+            if "pickup" in loc_type:
+                task_type_key = "pickup"
+            elif "delivery" in loc_type:
+                task_type_key = "delivery"
+
+            if task_type_key:
+                if "_current" in loc_type:
+                    location_map.setdefault((id_, task_type_key), {})["current"] = real_idx
+                elif "_destination" in loc_type:
+                    location_map.setdefault((id_, task_type_key), {})["destination"] = real_idx
 
         # Step 2: For each pair found, call AddPickupAndDelivery + constraints
         for key, pair_dict in location_map.items():
@@ -68,21 +76,24 @@ def add_pickup_delivery_constraints(routing, manager, distance_matrix_data,
                     logger.error(f"Current state - from_index: {from_index}, to_index: {to_index}")
                     raise
 
-                # Force same vehicle
-                routing.solver().Add(routing.VehicleVar(from_index) == routing.VehicleVar(to_index))
+                # Force same vehicle - This is actually redundant if AddPickupAndDelivery is used,
+                # as it already enforces this. Keeping it doesn't hurt, but can be removed.
+                # routing.solver().Add(routing.VehicleVar(from_index) == routing.VehicleVar(to_index))
 
-                # Provide precedence => pickup must come before delivery.
-                # OR-Tools enforces this automatically with AddPickupAndDelivery, but
-                # we can add additional constraints that cumulative volume/weight at pickup <= at delivery:
-                volume_dimension = routing.GetDimensionOrDie(volume_dim_name)
-                weight_dimension = routing.GetDimensionOrDie(weight_dim_name)
+                # The precedence (pickup before delivery) is enforced by AddPickupAndDelivery.
+                # The following cumulative constraints are often problematic or unnecessary with
+                # correctly defined demand callbacks and capacity dimensions.
+                # The capacity dimensions themselves will ensure load doesn't exceed vehicle capacity.
 
-                routing.solver().Add(
-                    volume_dimension.CumulVar(from_index) <= volume_dimension.CumulVar(to_index)
-                )
-                routing.solver().Add(
-                    weight_dimension.CumulVar(from_index) <= weight_dimension.CumulVar(to_index)
-                )
+                # volume_dimension = routing.GetDimensionOrDie(volume_dim_name)
+                # weight_dimension = routing.GetDimensionOrDie(weight_dim_name)
+
+                # routing.solver().Add(
+                #     volume_dimension.CumulVar(from_index) <= volume_dimension.CumulVar(to_index)
+                # )
+                # routing.solver().Add(
+                #     weight_dimension.CumulVar(from_index) <= weight_dimension.CumulVar(to_index)
+                # )
 
     except Exception as e:
         logger.error(f"Error in add_pickup_delivery_constraints: {e}", exc_info=True)

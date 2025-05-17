@@ -15,7 +15,7 @@ def enter_vrp_flow(files_data):
 
     raw_solution, routing, manager = solve_vrp(routing, manager)
 
-    final_solution = format_solution(processed_csv_data, manager, routing, raw_solution)
+    final_solution = format_solution(processed_csv_data, distance_matrix_data["data"], manager, routing, raw_solution)
 
     return final_solution
 
