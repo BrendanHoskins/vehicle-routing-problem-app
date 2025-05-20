@@ -216,45 +216,72 @@ function addDefaultMappingButton(fileType, mappingContainer) {
   // Add click event to apply default mappings
   defaultButton.addEventListener("click", () => {
     const selects = mappingContainer.querySelectorAll("select");
+    const alreadyMappedValues = new Set(); // Track already mapped internal values
 
-    // Apply default mappings based on column names and fileType
     selects.forEach((select) => {
-      const column = select.dataset.column.toLowerCase();
+      const column = select.dataset.column.toLowerCase().trim();
       let bestMapping = null;
 
-      // Try to find the best match for this column
       if (fileTypes[fileType] && fileTypes[fileType].mappings) {
-        // Match by exact column name
-        const exactMatch = fileTypes[fileType].mappings.find(
-          (m) =>
-            column === m.label.toLowerCase() || column === m.value.toLowerCase()
-        );
+        let potentialMappings = [];
 
-        if (exactMatch) {
-          bestMapping = exactMatch.value;
-        } else {
-          // Match by contains
-          const containsMatch = fileTypes[fileType].mappings.find(
-            (m) =>
-              column.includes(m.label.toLowerCase()) ||
-              column.includes(m.value.toLowerCase()) ||
-              m.label.toLowerCase().includes(column) ||
-              m.value.toLowerCase().includes(column)
-          );
-
-          if (containsMatch) {
-            bestMapping = containsMatch.value;
+        for (const mapping of fileTypes[fileType].mappings) {
+          if (alreadyMappedValues.has(mapping.value)) {
+            continue; // This internal value is already mapped, skip
           }
+
+          const mappingValueLower = mapping.value.toLowerCase().trim();
+          const mappingLabelLower = mapping.label.toLowerCase().trim();
+
+          // Scoring: Higher is better
+          let score = 0;
+          if (column === mappingValueLower) score = 10; // Exact match to value
+          else if (column === mappingLabelLower)
+            score = 9; // Exact match to label
+          else if (
+            mappingValueLower.includes(column) &&
+            column.includes(mappingValueLower)
+          )
+            score = 8; // Strong bi-directional partial match
+          else if (
+            mappingLabelLower.includes(column) &&
+            column.includes(mappingLabelLower)
+          )
+            score = 7; // Strong bi-directional partial match for label
+          else if (column.includes(mappingValueLower)) score = 6;
+          else if (column.includes(mappingLabelLower)) score = 5;
+          else if (mappingValueLower.includes(column)) score = 4;
+          else if (mappingLabelLower.includes(column)) score = 3;
+          // Specific check for "uid" to avoid mapping "Truck UID" to employee "uid" if "UID" column is present
+          if (mapping.value === "uid" && column.includes("truck")) score = 0; // Penalize mapping "uid" to "Truck UID" like columns for employees
+          if (mapping.value === "truck_uid" && !column.includes("truck"))
+            score = 0; // Penalize mapping "truck_uid" to non-truck-related columns
+
+          if (score > 0) {
+            potentialMappings.push({ value: mapping.value, score: score });
+          }
+        }
+
+        if (potentialMappings.length > 0) {
+          potentialMappings.sort((a, b) => b.score - a.score); // Sort by score descending
+          bestMapping = potentialMappings[0].value;
         }
       }
 
-      // Apply the mapping if found
       if (bestMapping) {
         select.value = bestMapping;
+        alreadyMappedValues.add(bestMapping); // Mark this internal value as mapped
 
         // Trigger change event to update mappings
         const event = new Event("change");
         select.dispatchEvent(event);
+      } else {
+        // If no mapping found, ensure it's reset or set to default
+        if (select.value !== "") {
+          select.value = ""; // Reset if previously set
+          const event = new Event("change");
+          select.dispatchEvent(event);
+        }
       }
     });
   });

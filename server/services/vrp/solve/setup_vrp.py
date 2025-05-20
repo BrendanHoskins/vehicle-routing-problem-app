@@ -9,6 +9,7 @@ from server.services.vrp.dimensions.volume_dimension import add_volume_dimension
 from server.services.vrp.dimensions.weight_dimension import add_weight_dimension
 from server.services.vrp.constraints.pickup_delivery_constraints import add_pickup_delivery_constraints
 from server.services.vrp.dimensions.cost_dimension import add_total_cost_dimension_and_evaluator
+from server.services.vrp.dimensions.time_dimension import add_time_dimension
 
 # Setup logging
 logging.basicConfig(
@@ -68,7 +69,7 @@ def setup_vrp(csv_data, distance_matrix_data):
             logger.error(f"Error setting primary arc cost evaluator: {str(e)}", exc_info=True)
             raise
 
-        # --- ADD OTHER DIMENSIONS (Distance for range, Volume, Weight) ---
+        # --- ADD OTHER DIMENSIONS (Distance for range, Volume, Weight, Time for shifts) ---
         try:
             # The distance dimension for vehicle range limits still uses the pure distance callback.
             add_distance_dimension(routing, manager, csv_data, distance_matrix_data_actual)
@@ -89,6 +90,13 @@ def setup_vrp(csv_data, distance_matrix_data):
             logger.debug("Weight dimension added successfully")
         except Exception as e:
             logger.error(f"Error adding weight dimension: {str(e)}", exc_info=True)
+            raise
+
+        try:
+            add_time_dimension(routing, manager, csv_data, distance_matrix_data_actual)
+            logger.info("Time dimension (for work shifts) added successfully.")
+        except Exception as e:
+            logger.error(f"Error adding time dimension: {str(e)}", exc_info=True)
             raise
         
         logger.info("Disjunctions for dropping nodes are DISABLED for this run.")

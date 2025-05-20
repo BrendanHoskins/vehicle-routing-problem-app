@@ -371,9 +371,25 @@ def build_response_from_cache(origins, destinations):
         norm_o = normalize_address(o)
         for j, d in enumerate(destinations):
             norm_d = normalize_address(d)
-            cached_item = DISTANCE_CACHE.get((norm_o, norm_d), {"distance_meters": 0, "duration_seconds": 0})
-            dist_meters = cached_item.get("distance_meters", 0)
-            duration_seconds = cached_item.get("duration_seconds", 0)
+            cached_data = DISTANCE_CACHE.get((norm_o, norm_d))
+            
+            dist_meters = 0
+            duration_seconds = 0
+
+            if isinstance(cached_data, dict): # New format
+                dist_meters = cached_data.get("distance_meters", 0)
+                duration_seconds = cached_data.get("duration_seconds", 0)
+            elif isinstance(cached_data, (int, float)): # Potentially old format (just distance)
+                # This case should ideally not happen if cache is cleared after format change
+                # Or if new entries always use the dict format.
+                # If we encounter this, it means this pair is missing duration.
+                # We might want to force a re-fetch for this pair, but for now,
+                # we'll proceed with 0 duration and log a warning.
+                # A better strategy if this occurs would be to treat this item as not fully cached.
+                dist_meters = int(cached_data)
+                duration_seconds = 0 # No duration info in old format
+                # Consider logging a warning here if you expect all cache entries to be dicts
+                # print(f"Warning: Cache item for ({norm_o}, {norm_d}) is in old format. Duration will be 0.")
             
             response.append({
                 "originIndex": i,

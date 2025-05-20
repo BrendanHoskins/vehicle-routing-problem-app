@@ -33,6 +33,11 @@ def format_solution(processed_csv_data, distance_matrix_data_actual, manager, ro
         logger.warning("Weight dimension not found in routing model.")
         weight_dimension = None
 
+    try:
+        time_dimension = routing.GetDimensionOrDie("Time")
+    except Exception:
+        logger.warning("Time dimension not found in routing model.")
+        time_dimension = None
 
     total_objective_cost = solution.ObjectiveValue() # This includes penalties if nodes were dropped
     total_route_arc_cost = 0 # This will be the sum of actual travel distances
@@ -71,6 +76,8 @@ def format_solution(processed_csv_data, distance_matrix_data_actual, manager, ro
                 stop_info["volume_cumul"] = solution.Value(volume_dimension.CumulVar(index))
             if weight_dimension:
                 stop_info["weight_cumul"] = solution.Value(weight_dimension.CumulVar(index))
+            if time_dimension:
+                stop_info["time_cumul_seconds"] = solution.Value(time_dimension.CumulVar(index))
             
             route_stops_details.append(stop_info)
 
@@ -103,6 +110,8 @@ def format_solution(processed_csv_data, distance_matrix_data_actual, manager, ro
             stop_info_end["volume_cumul"] = solution.Value(volume_dimension.CumulVar(index))
         if weight_dimension:
             stop_info_end["weight_cumul"] = solution.Value(weight_dimension.CumulVar(index))
+        if time_dimension:
+            stop_info_end["time_cumul_seconds"] = solution.Value(time_dimension.CumulVar(index))
         route_stops_details.append(stop_info_end)
 
 

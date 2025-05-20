@@ -7,8 +7,6 @@ from server.services.vrp.solve.format_vrp_solution import format_solution
 def enter_vrp_flow(files_data):
     processed_csv_data = CSVProcessor().process_files(files_data)
 
-    # Separate distance matrix and the formatting of that data
-
     distance_matrix_data = create_distance_matrix(processed_csv_data['deliveries'], processed_csv_data['depots'], processed_csv_data['trucks'], processed_csv_data['pickups'])
 
     routing, manager = setup_vrp(processed_csv_data, distance_matrix_data["data"])
