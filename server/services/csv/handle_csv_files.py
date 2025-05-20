@@ -14,7 +14,8 @@ class CSVProcessor:
             'deliveries': self._get_delivery_mapping_config(),
             'trucks': self._get_truck_mapping_config(),
             'depots': self._get_depot_mapping_config(),
-            'pickups': self._get_pickup_mapping_config()
+            'pickups': self._get_pickup_mapping_config(),
+            'employees': self._get_employee_mapping_config()
         }
 
     @staticmethod
@@ -59,7 +60,8 @@ class CSVProcessor:
                     'max_weight': 0.0,
                     'current_location': '',
                     'end_location': '',
-                    'range': 0.0
+                    'range': 0.0,
+                    'mpg': 0.0
                 }),
                 'max_volume': lambda row, col, results: results[-1].update({
                     'max_volume': float(row[col]) if pd.notna(row[col]) else 0.0
@@ -77,6 +79,9 @@ class CSVProcessor:
                 }),
                 'range': lambda row, col, results: results[-1].update({
                     'range': float(row[col]) if pd.notna(row[col]) else 0.0
+                }),
+                'mpg': lambda row, col, results: results[-1].update({
+                    'mpg': float(row[col]) if pd.notna(row[col]) and float(row[col]) > 0 else 1.0
                 })
             },
             'default_handlers': {}
@@ -126,6 +131,35 @@ class CSVProcessor:
                 }),
                 'weight': lambda row, col, results: results[-1].update({
                     'weight': float(row[col]) if pd.notna(row[col]) else 0.0
+                })
+            },
+            'default_handlers': {}
+        }
+
+    @staticmethod
+    def _get_employee_mapping_config():
+        return {
+            'output_format': [],
+            'field_processors': {
+                'uid': lambda row, col, results: results.append({
+                    'employee_uid': str(row[col]).strip() if str(row[col]).strip().lower() != 'nan' 
+                        else f"emp_{len(results) + 1}",
+                    'work_start_time': '',
+                    'work_end_time': '',
+                    'hourly_pay_rate': 0.0,
+                    'truck_uid': ''
+                }),
+                'work_start_time': lambda row, col, results: results[-1].update({
+                    'work_start_time': str(row[col]).strip() if str(row[col]).strip().lower() != 'nan' else "N/A"
+                }),
+                'work_end_time': lambda row, col, results: results[-1].update({
+                    'work_end_time': str(row[col]).strip() if str(row[col]).strip().lower() != 'nan' else "N/A"
+                }),
+                'hourly_pay_rate': lambda row, col, results: results[-1].update({
+                    'hourly_pay_rate': float(row[col]) if pd.notna(row[col]) else 0.0
+                }),
+                'truck_uid': lambda row, col, results: results[-1].update({
+                    'truck_uid': str(row[col]).strip() if str(row[col]).strip().lower() != 'nan' else "N/A"
                 })
             },
             'default_handlers': {}

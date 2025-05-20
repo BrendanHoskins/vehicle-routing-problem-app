@@ -113,6 +113,95 @@ def format_solution(processed_csv_data, distance_matrix_data_actual, manager, ro
             "stops_details": route_stops_details, # List of detailed stop info
             "route_cost_distance": route_distance, # Actual travel distance for this route
         }
+
+        # Check if the vehicle is effectively unused (only start and end nodes visited, and no "work" done)
+        # A vehicle is unused if its route_stops_matrix_indices contains only its start and end node,
+        # and no other unique nodes from the mandatory_node_types.
+        # A simpler check: if number of distinct stops (excluding start/end if they are the only ones) is 0.
+        # Or, if the route consists of exactly 2 stops which are the vehicle's start and end.
+        
+        # Get the vehicle's defined start and end matrix indices
+        vehicle_start_node_idx = distance_matrix_data_actual["vehicle_starts"][vehicle_id]
+        vehicle_end_node_idx = distance_matrix_data_actual["vehicle_ends"][vehicle_id]
+
+        # A vehicle is considered "unused" if its route consists only of its start and end node,
+        # and no other intermediate service stops.
+        # The route_stops_matrix_indices will always contain at least the start and end node.
+        is_unused = False
+        if len(route_stops_matrix_indices) == 2 and \
+           route_stops_matrix_indices[0] == vehicle_start_node_idx and \
+           route_stops_matrix_indices[1] == vehicle_end_node_idx:
+            is_unused = True
+        # Handle case where start and end are the same, and it's the only stop (effectively unused)
+        # Note: route_stops_matrix_indices will have [start_node, start_node] if start=end and no tasks
+        elif vehicle_start_node_idx == vehicle_end_node_idx and \
+             len(route_stops_matrix_indices) == 2 and \
+             route_stops_matrix_indices[0] == vehicle_start_node_idx and \
+             route_stops_matrix_indices[1] == vehicle_start_node_idx : # Both stops are the same start/end node
+             is_unused = True
+        # A more robust check might involve seeing if any "task" nodes were visited.
+        # Let's count non-start/end nodes in the route.
+        num_actual_task_stops = 0
+        for stop_idx_in_route in route_stops_matrix_indices:
+            if stop_idx_in_route != vehicle_start_node_idx and stop_idx_in_route != vehicle_end_node_idx:
+                # Further check if this stop_idx_in_route is one of the 'task' types if needed
+                # For now, any intermediate stop means it's used.
+                # However, depots are intermediate but not tasks.
+                # Let's refine: check if any of the mandatory_node_types were visited by this truck.
+                is_task_node_in_route = False
+                for stop_detail in route_stops_details: # Iterate through detailed stops for this route
+                    # Exclude the first (start) and last (end) stops from this specific check if they match vehicle's own start/end
+                    is_current_stop_vehicle_start = (stop_detail['matrix_index'] == vehicle_start_node_idx and route_stops_details.index(stop_detail) == 0)
+                    is_current_stop_vehicle_end = (stop_detail['matrix_index'] == vehicle_end_node_idx and route_stops_details.index(stop_detail) == len(route_stops_details)-1)
+
+                    if not is_current_stop_vehicle_start and not is_current_stop_vehicle_end:
+                        # Check against the defined mandatory node types
+                        # These are the types for which disjunctions were added
+                        defined_mandatory_node_types = [ 
+                            "delivery_current", "delivery_destination", 
+                            "pickup_current", "pickup_destination"
+                        ]
+                        if stop_detail['type'] in defined_mandatory_node_types:
+                            is_task_node_in_route = True
+                            break 
+                if not is_task_node_in_route: # If after checking all stops, no task node was found for this vehicle
+                    is_unused = True # Re-evaluate this logic: if is_task_node_in_route is false for whole route, then unused.
+
+        # Simpler check for "unused": if the route length is 2 (start, end) and no "task" was done
+        # A vehicle did "work" if it visited any node other than its own start/end,
+        # OR if its start/end are different and it traveled.
+        # The clearest indicator is if it visited any of the "mandatory_node_types"
+        
+        # Revised Unused Check:
+        # A vehicle is considered unused if its route contains no nodes of type
+        # "delivery_current", "delivery_destination", "pickup_current", "pickup_destination".
+        # (Except if the start/end node itself is one of these, which is an edge case we're not focusing on for "unused")
+        
+        has_serviced_mandatory_task = False
+        # Check stops between the absolute start and absolute end of the vehicle's journey
+        for i in range(len(route_stops_details)):
+            stop_detail = route_stops_details[i]
+            # If it's the first stop and it's the vehicle's start, or last stop and vehicle's end, skip unless it's also a task
+            is_true_vehicle_start_stop = (i == 0 and stop_detail['matrix_index'] == vehicle_start_node_idx)
+            is_true_vehicle_end_stop = (i == len(route_stops_details) - 1 and stop_detail['matrix_index'] == vehicle_end_node_idx)
+
+            # A node is a service task if its type is one of the mandatory types
+            # AND it's not *just* the vehicle's own start or end depot being transited through.
+            # However, a vehicle start/end *can* be a service location.
+            # The key is if *any* node of these types is in the route.
+            defined_mandatory_node_types = [ 
+                "delivery_current", "delivery_destination", 
+                "pickup_current", "pickup_destination"
+            ]
+            if stop_detail['type'] in defined_mandatory_node_types:
+                has_serviced_mandatory_task = True
+                break
+        
+        route_info["is_used"] = has_serviced_mandatory_task
+        if not has_serviced_mandatory_task:
+            logger.info(f"Vehicle {vehicle_id} (Truck: {route_info['truck_identifier']}) is considered UNUSED as it serviced no mandatory task types.")
+
+
         routes.append(route_info)
 
     # Identify unvisited mandatory nodes (those that should have had a disjunction)

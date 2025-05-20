@@ -50,7 +50,7 @@ def normalize_address(address):
 
 def create_distance_matrix(deliveries, depots, trucks, pickups):
     """
-    Build a distance matrix using deliveries, depots, trucks, and pickups data.
+    Build distance and time matrices using deliveries, depots, trucks, and pickups data.
 
     Args:
         deliveries (list): List of deliveries, each with:
@@ -97,7 +97,8 @@ def create_distance_matrix(deliveries, depots, trucks, pickups):
             {
                 "success": True,
                 "data": {
-                    "matrix": 2D list of distances (in meters),
+                    "distance_matrix": 2D list of distances (in meters),
+                    "time_matrix": 2D list of durations (in seconds),
                     "locations": [metadata for each address],
                     "depot_indices": [indices of depots in the matrix],
                     "vehicle_starts": [indices of truck current locations],
@@ -225,9 +226,10 @@ def create_distance_matrix(deliveries, depots, trucks, pickups):
                 "weight": pickup["weight"]
             })
 
-        # Now create the master distance matrix (n x n):
+        # Now create the master distance and time matrices (n x n):
         n = len(unique_addresses)
         distance_matrix = [[0] * n for _ in range(n)]
+        time_matrix = [[0] * n for _ in range(n)]
 
         # We'll batch requests to Google depending on your usage
         max_origins_per_batch = 25
@@ -246,15 +248,20 @@ def create_distance_matrix(deliveries, depots, trucks, pickups):
                 if "error" in response:
                     raise Exception(response["error"].get("message", "Google Routes API error"))
 
-                batch_matrix = build_distance_matrix(response)
-                for row_idx, row in enumerate(batch_matrix):
-                    for col_idx, value in enumerate(row):
+                batch_dist_matrix, batch_time_matrix = extract_matrices_from_response(response)
+                for row_idx, row_data in enumerate(batch_dist_matrix):
+                    for col_idx, value in enumerate(row_data):
                         distance_matrix[i + row_idx][j + col_idx] = value
+                
+                for row_idx, row_data in enumerate(batch_time_matrix):
+                    for col_idx, value in enumerate(row_data):
+                        time_matrix[i + row_idx][j + col_idx] = value
 
         return {
             "success": True,
             "data": {
-                "matrix": distance_matrix,
+                "distance_matrix": distance_matrix,
+                "time_matrix": time_matrix,
                 "locations": locations,
                 "depot_indices": [loc["index"] for loc in locations if loc["type"] == "depot"],
                 "vehicle_starts": truck_current_indices,
@@ -329,9 +336,21 @@ def cached_send_request(origins, destinations, api_key):
         o_idx = elem["originIndex"]
         d_idx = elem["destinationIndex"]
         dist_meters = elem.get("distanceMeters", 0)
+        
+        duration_str = elem.get("duration", "0s") # e.g., "123s"
+        duration_seconds = 0
+        if duration_str and duration_str.endswith('s'):
+            try:
+                duration_seconds = int(duration_str[:-1])
+            except ValueError:
+                duration_seconds = 0 # Default if parsing fails
+        
         origin_addr = missing_origins[o_idx]
         dest_addr = missing_destinations[d_idx]
-        DISTANCE_CACHE[(origin_addr, dest_addr)] = dist_meters
+        DISTANCE_CACHE[(origin_addr, dest_addr)] = {
+            "distance_meters": dist_meters,
+            "duration_seconds": duration_seconds
+        }
 
     # Save cache to disk
     save_cache()
@@ -352,11 +371,15 @@ def build_response_from_cache(origins, destinations):
         norm_o = normalize_address(o)
         for j, d in enumerate(destinations):
             norm_d = normalize_address(d)
-            dist_meters = DISTANCE_CACHE.get((norm_o, norm_d), 0)
+            cached_item = DISTANCE_CACHE.get((norm_o, norm_d), {"distance_meters": 0, "duration_seconds": 0})
+            dist_meters = cached_item.get("distance_meters", 0)
+            duration_seconds = cached_item.get("duration_seconds", 0)
+            
             response.append({
                 "originIndex": i,
                 "destinationIndex": j,
-                "distanceMeters": dist_meters
+                "distanceMeters": dist_meters,
+                "duration": f"{duration_seconds}s" # Mimic API response format
             })
     return response
 
@@ -426,24 +449,67 @@ def send_request(origin_addresses, dest_addresses, API_key):
 
     return {"error": {"message": "Failed to send request after max retries"}}
 
-def build_distance_matrix(response):
+def extract_matrices_from_response(response):
     """
-    Convert the list of route results from the Google Routes API into a 2D matrix.
+    Convert the list of route results from the Google Routes API 
+    into a 2D distance matrix and a 2D time matrix.
     """
     if not response:
-        return [[]]
+        return [[]], [[]]
 
-    max_origin = max(elem["originIndex"] for elem in response) + 1
-    max_dest = max(elem["destinationIndex"] for elem in response) + 1
-
-    batch_matrix = [[0] * max_dest for _ in range(max_origin)]
+    # Determine matrix dimensions from the response
+    # Response elements have originIndex and destinationIndex
+    max_origin_idx = -1
+    max_dest_idx = -1
     for elem in response:
+        if "originIndex" in elem: # Check if key exists
+            max_origin_idx = max(max_origin_idx, elem["originIndex"])
+        if "destinationIndex" in elem: # Check if key exists
+            max_dest_idx = max(max_dest_idx, elem["destinationIndex"])
+    
+    # If no valid indices found, return empty matrices
+    if max_origin_idx == -1 or max_dest_idx == -1:
+        # This case can happen if the response is an error object or unexpected format
+        # or if all items were from cache and build_response_from_cache had an issue.
+        # For safety, determine size from actual indices present if possible.
+        # If response is just an error dict:
+        if not isinstance(response, list) or not all(isinstance(el, dict) for el in response):
+             return [[]], [[]] # Not a list of dicts
+        
+        # If response is a list but empty or no valid indices
+        if not any("originIndex" in elem and "destinationIndex" in elem for elem in response):
+            return [[]], [[]]
+
+
+    num_origins = max_origin_idx + 1
+    num_destinations = max_dest_idx + 1
+
+    batch_dist_matrix = [[0] * num_destinations for _ in range(num_origins)]
+    batch_time_matrix = [[0] * num_destinations for _ in range(num_origins)]
+
+    for elem in response:
+        # Ensure element is a dictionary and has the required keys
+        if not isinstance(elem, dict) or "originIndex" not in elem or "destinationIndex" not in elem:
+            # Log or handle malformed element if necessary
+            continue
+
         i = elem["originIndex"]
         j = elem["destinationIndex"]
+        
         if "distanceMeters" in elem:
-            batch_matrix[i][j] = elem["distanceMeters"]
+            batch_dist_matrix[i][j] = elem["distanceMeters"]
+        
+        duration_str = elem.get("duration", "0s") # e.g., "123s"
+        if duration_str and isinstance(duration_str, str) and duration_str.endswith('s'):
+            try:
+                batch_time_matrix[i][j] = int(duration_str[:-1])
+            except ValueError:
+                batch_time_matrix[i][j] = 0 # Default if parsing fails
+        elif isinstance(duration_str, (int, float)): # If it's already a number (e.g. from a direct calculation)
+             batch_time_matrix[i][j] = int(duration_str)
 
-    return batch_matrix
+
+    return batch_dist_matrix, batch_time_matrix
 
 def deduplicate_addresses(deliveries, depots, trucks):
     """

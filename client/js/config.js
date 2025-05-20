@@ -35,6 +35,7 @@ export const fileTypes = {
       { value: "current_location", label: "Current Location" },
       { value: "end_location", label: "End Location" },
       { value: "range", label: "Range (single tank or charge)" },
+      { value: "mpg", label: "Miles Per Gallon (MPG)" },
     ],
     required: true,
     validationKey: "max_volume",
@@ -48,6 +49,18 @@ export const fileTypes = {
     ],
     required: true,
     validationKey: "uid",
-  }
+  },
+  employees: {
+    id: "employees",
+    label: "Employees CSV",
+    mappings: [
+      { value: "uid", label: "UID" },
+      { value: "work_start_time", label: "Work Start Time" },
+      { value: "work_end_time", label: "Work End Time" },
+      { value: "hourly_pay_rate", label: "Hourly Pay Rate" },
+      { value: "truck_uid", label: "Assigned Truck UID" },
+    ],
+    required: true,
+    validationKey: "uid",
+  },
 };
-
