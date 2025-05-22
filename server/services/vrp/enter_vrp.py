@@ -1,11 +1,11 @@
-from server.services.csv.handle_csv_files import CSVProcessor
+from server.services.csv.handle_excel_file import ExcelWorkbookProcessor
 from server.services.google_routes_api.get_route_matrix import create_distance_matrix
 from server.services.vrp.solve.setup_vrp import setup_vrp
 from server.services.vrp.solve.solve_vrp import solve_vrp
 from server.services.vrp.solve.format_vrp_solution import format_solution
 
 def enter_vrp_flow(files_data):
-    processed_csv_data = CSVProcessor().process_files(files_data)
+    processed_csv_data = ExcelWorkbookProcessor().process_files(files_data)
 
     distance_matrix_data = create_distance_matrix(processed_csv_data['deliveries'], processed_csv_data['depots'], processed_csv_data['trucks'], processed_csv_data['pickups'])
 

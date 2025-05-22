@@ -1,12 +1,15 @@
 from flask import Flask, send_from_directory
-from api.vrp_route import vrp_bp
-from api.csv_route import csv_bp
+from server.api.vrp_route import vrp_bp
+from server.api.excel_route import excel_bp
 import os
+from server.db.init_db import init_app
 
-app = Flask(__name__)
+app = Flask(import_name=__name__, instance_path=os.path.join(os.path.dirname(__file__), 'instance'))
+app.config.from_mapping(DATABASE=os.path.join(app.instance_path, 'db.sqlite'))
+os.makedirs(app.instance_path)
 
 app.register_blueprint(vrp_bp, url_prefix='/api/vrp')
-app.register_blueprint(csv_bp, url_prefix='/api/csv')
+app.register_blueprint(excel_bp, url_prefix='/api/excel')
 
 # Get the absolute path to the client directory
 CLIENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'client'))
@@ -33,6 +36,8 @@ def serve_css(filename):
 @app.route('/js/<path:filename>')
 def serve_js(filename):
     return send_from_directory(os.path.join(CLIENT_DIR, 'js'), filename)
+
+init_app(app)
 
 if __name__ == '__main__':
     app.run(debug=True)

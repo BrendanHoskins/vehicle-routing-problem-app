@@ -1,56 +1,28 @@
 import { fileTypes } from "./config.js";
 
-let currentFormData = new FormData();
-let csvFileContent = null;
-let selectedColumnsMap = {};
-let columnMappings = {};
-let delimiter = ",";
-
-function handleFileUpload(event, fileType) {
+function handleFileUpload() {
   const fileInput = document.createElement("input");
   fileInput.setAttribute("id", "fileInput");
   fileInput.type = "file";
-  fileInput.accept = ".csv";
+  fileInput.accept = ".xls, .xlsx";
   fileInput.addEventListener("change", async (event) => {
     const file = event.target.files[0];
-    if (!file) return;
-
-    // Store the file content
-    csvFileContent = file;
-
-    // Validate file type
-    if (!file.name.endsWith(".csv")) {
-      alert("Please upload a CSV file");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("csv", file);
 
     try {
-      const response = await fetch("/api/csv/upload", {
+      const response = await fetch("/api/excel/upload", {
         method: "POST",
-        body: formData,
+        body: { file: file },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status !== 200) {
+        throw new Error(`/api/excel/upload error: ${response.body.error}`);
       }
 
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || "Failed to upload CSV");
-      }
-
-      console.log("Received response:", data);
-      selectedColumnsMap[fileType] = data.columns;
-      delimiter = data.delimiter || ",";
-      setupColumnMappingUI(data.columns, fileType);
-
-      currentFormData.append(fileType, file);
+      const fileData = await response.json();
+      setupColumnMappingUI(fileData);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error uploading CSV: " + error.message);
+      alert("Error in handleFileUpload: ", error.message);
     }
   });
   fileInput.click();
@@ -71,7 +43,6 @@ function createMappingSelect(columns, fileType) {
 }
 
 function setupColumnMappingUI(columns, fileType) {
-  // Create mapping container if it doesn't exist
   let mappingContainer = document.querySelector(
     `.mapping-container-${fileType}`
   );
@@ -186,103 +157,3 @@ async function handleFileSubmit() {
 }
 
 export { handleFileUpload, handleFileSubmit };
-
-// Add event listener for Calculate Route button
-document.getElementById("submitButton").addEventListener("click", async () => {
-  try {
-    const response = await handleFileSubmit();
-    if (response.ok) {
-      const data = await response.json();
-      console.log("VRP solution:", data);
-      // Add code here to display the solution
-    } else {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    alert("Error calculating route: " + error.message);
-  }
-});
-
-function addDefaultMappingButton(fileType, mappingContainer) {
-  // Create the default mapping button
-  const defaultButton = document.createElement("button");
-  defaultButton.textContent = "Set Default Mappings";
-  defaultButton.className = "default-mapping-button";
-
-  // Insert before mapping container
-  mappingContainer.parentNode.insertBefore(defaultButton, mappingContainer);
-
-  // Add click event to apply default mappings
-  defaultButton.addEventListener("click", () => {
-    const selects = mappingContainer.querySelectorAll("select");
-    const alreadyMappedValues = new Set(); // Track already mapped internal values
-
-    selects.forEach((select) => {
-      const column = select.dataset.column.toLowerCase().trim();
-      let bestMapping = null;
-
-      if (fileTypes[fileType] && fileTypes[fileType].mappings) {
-        let potentialMappings = [];
-
-        for (const mapping of fileTypes[fileType].mappings) {
-          if (alreadyMappedValues.has(mapping.value)) {
-            continue; // This internal value is already mapped, skip
-          }
-
-          const mappingValueLower = mapping.value.toLowerCase().trim();
-          const mappingLabelLower = mapping.label.toLowerCase().trim();
-
-          // Scoring: Higher is better
-          let score = 0;
-          if (column === mappingValueLower) score = 10; // Exact match to value
-          else if (column === mappingLabelLower)
-            score = 9; // Exact match to label
-          else if (
-            mappingValueLower.includes(column) &&
-            column.includes(mappingValueLower)
-          )
-            score = 8; // Strong bi-directional partial match
-          else if (
-            mappingLabelLower.includes(column) &&
-            column.includes(mappingLabelLower)
-          )
-            score = 7; // Strong bi-directional partial match for label
-          else if (column.includes(mappingValueLower)) score = 6;
-          else if (column.includes(mappingLabelLower)) score = 5;
-          else if (mappingValueLower.includes(column)) score = 4;
-          else if (mappingLabelLower.includes(column)) score = 3;
-          // Specific check for "uid" to avoid mapping "Truck UID" to employee "uid" if "UID" column is present
-          if (mapping.value === "uid" && column.includes("truck")) score = 0; // Penalize mapping "uid" to "Truck UID" like columns for employees
-          if (mapping.value === "truck_uid" && !column.includes("truck"))
-            score = 0; // Penalize mapping "truck_uid" to non-truck-related columns
-
-          if (score > 0) {
-            potentialMappings.push({ value: mapping.value, score: score });
-          }
-        }
-
-        if (potentialMappings.length > 0) {
-          potentialMappings.sort((a, b) => b.score - a.score); // Sort by score descending
-          bestMapping = potentialMappings[0].value;
-        }
-      }
-
-      if (bestMapping) {
-        select.value = bestMapping;
-        alreadyMappedValues.add(bestMapping); // Mark this internal value as mapped
-
-        // Trigger change event to update mappings
-        const event = new Event("change");
-        select.dispatchEvent(event);
-      } else {
-        // If no mapping found, ensure it's reset or set to default
-        if (select.value !== "") {
-          select.value = ""; // Reset if previously set
-          const event = new Event("change");
-          select.dispatchEvent(event);
-        }
-      }
-    });
-  });
-}
