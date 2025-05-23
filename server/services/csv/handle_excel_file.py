@@ -240,9 +240,13 @@ class ExcelFileProcessor:
         return results
 
     @staticmethod
-    def parse_excel_files_and_return_sheets_and_columns(file):
+    def parse_excel_file_and_return_sheets_and_columns(file):
         try:
-            dataframe = pd.read_excel(io=io.StringIO(file),sheet_name=None,engine=None)
-            print('Here')
+            df = pd.read_excel(io=file.stream, sheet_name=None, engine=None)
+            mappings = {}
+            for sheet_name, data in df.items():
+                mappings[sheet_name] = data.columns.tolist()
+            return mappings
         except Exception as error:
-            print('Error in parse_excel_files_and_return_sheets_and_columns:', error)
+            print('Error in parse_excel_file_and_return_sheets_and_columns:', error)
+            raise Exception('Failed to parse Excel file in parse_excel_file_and_return_sheets_and_columns')

@@ -1,15 +1,17 @@
 from flask import Flask, send_from_directory
-from server.api.vrp_route import vrp_bp
-from server.api.excel_route import excel_bp
+from server.api.api_routes import api_bp
 import os
 from server.db.init_db import init_app
 
 app = Flask(import_name=__name__, instance_path=os.path.join(os.path.dirname(__file__), 'instance'))
 app.config.from_mapping(DATABASE=os.path.join(app.instance_path, 'db.sqlite'))
-os.makedirs(app.instance_path)
 
-app.register_blueprint(vrp_bp, url_prefix='/api/vrp')
-app.register_blueprint(excel_bp, url_prefix='/api/excel')
+try:
+    os.makedirs(app.instance_path)
+except OSError:
+    pass
+
+app.register_blueprint(api_bp, url_prefix='/api')
 
 # Get the absolute path to the client directory
 CLIENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'client'))

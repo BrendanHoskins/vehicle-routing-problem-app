@@ -3,3 +3,4 @@ python-dotenv
 ortools
 flask
 pandas
+openpyxl

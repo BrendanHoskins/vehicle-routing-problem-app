@@ -55,8 +55,7 @@ export const fileTypes = {
     label: "Employees CSV",
     mappings: [
       { value: "uid", label: "UID" },
-      { value: "work_start_time", label: "Work Start Time" },
-      { value: "work_end_time", label: "Work End Time" },
+      { value: "total_hours_available", label: "Hours Available to Work" },
       { value: "hourly_pay_rate", label: "Hourly Pay Rate" },
       { value: "truck_uid", label: "Assigned Truck UID" },
     ],
