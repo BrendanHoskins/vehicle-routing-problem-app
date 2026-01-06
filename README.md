@@ -166,13 +166,6 @@ Same structure as Deliveries sheet.
 - **Google Routes API**: 3000 elements per minute (automatically throttled)
 - **Batch size**: 25×25 origins/destinations per request
 
-## 🎯 Use Cases
-
-1. **Last-mile delivery optimization**: E-commerce, food delivery, package services
-2. **Service route planning**: Field service, maintenance, healthcare visits
-3. **Logistics coordination**: Multi-stop pickup and delivery operations
-4. **Fleet management**: Optimizing vehicle utilization and driver schedules
-
 ## 🔍 Algorithm Details
 
 The solver implements a sophisticated CVRPPD algorithm:
@@ -182,43 +175,3 @@ The solver implements a sophisticated CVRPPD algorithm:
 3. **Multi-objective optimization**: Balances fuel costs, labor costs, and constraint satisfaction
 4. **Constraint handling**: Enforces capacity, time, range, and pickup-delivery pairing constraints
 5. **Solution refinement**: Applies local search metaheuristics for solution improvement
-
-## 🚧 Future Enhancements
-
-- **Route visualization**: Interactive maps showing optimized routes
-- **Real-time tracking**: Integration with GPS tracking systems
-- **Advanced constraints**: Time windows, driver preferences, vehicle-customer compatibility
-- **Batch processing**: Support for multiple optimization scenarios
-- **Export capabilities**: PDF reports, CSV route sheets, API integration
-
-## 📝 Development Notes
-
-### Performance Considerations
-- OR-Tools C++ core ensures fast solving despite Python wrapper
-- Caching strategies minimize redundant API calls and computations
-- Chunked file processing handles large datasets efficiently
-- SQLite provides adequate performance for single-user scenarios
-
-### Scalability Paths
-- **Multi-user**: Upgrade to PostgreSQL + Redis for session management
-- **High-performance**: Consider FastAPI + async processing for concurrent requests
-- **Enterprise**: Implement microservices architecture with dedicated solver instances
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **Google OR-Tools**: Powerful optimization library enabling sophisticated VRP solving
-- **Google Routes API**: Accurate real-world distance and time data
-- **Flask**: Lightweight and flexible web framework
-- **Pandas**: Robust data processing and Excel integration
