@@ -5,8 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Router</title>
     <link rel="stylesheet" href="/css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
   </head>
   <body>
+    <div id="app-container">
+      <div id="initial-view">
+        <div class="step-section" id="file-upload-section">
+          <h2><i class="fas fa-file-upload"></i> File Upload</h2>
+          <p>Upload your Excel file containing VRP data.</p>
+        </div>
+        <div class="arrow"><i class="fas fa-arrow-right"></i></div>
+        <div class="step-section" id="mappings-config-section">
+          <h2><i class="fas fa-table-columns"></i> Mappings & Config</h2>
+          <p>Map your Excel columns and configure VRP settings.</p>
+        </div>
+        <div class="arrow"><i class="fas fa-arrow-right"></i></div>
+        <div class="step-section" id="visualize-export-section">
+          <h2><i class="fas fa-route"></i> Visualize & Export</h2>
+          <p>View the optimal route and export the results.</p>
+        </div>
+      </div>
+      <button id="get-started-btn">Get Started</button>
+    </div>
+
+    <div id="file-upload-view" class="view hidden">
+      <!-- File upload content will go here -->
+      <h3>Upload Your Excel File</h3>
+      <div id="drop-zone">
+        <p>Drag & drop your Excel file here, or click to select file</p>
+        <button id="file-picker-btn">Select File</button>
+        <input type="file" id="fileInput" accept=".xls, .xlsx" class="hidden" />
+      </div>
+      <div id="file-upload-loader" class="loader hidden"></div>
+    </div>
+
+    <div id="mappings-config-view" class="view hidden">
+      <!-- Mappings and config content will go here -->
+      <h3>Map Columns & Configure</h3>
+      <button id="map-defaults-btn">Map Your Workbook to Defaults</button>
+      <div id="sheet-tabs-container"></div>
+      <div id="sheet-content-container"></div>
+      <button id="calculate-route-btn" class="hidden">Calculate Route</button>
+      <div id="calculate-loader" class="loader hidden"></div>
+    </div>
+
+    <div id="visualize-export-view" class="view hidden">
+      <!-- Visualize and export content will go here -->
+      <h3>Route Visualization & Export</h3>
+      <div id="visualize-loader" class="loader hidden"></div>
+    </div>
 
     <script type="module" src="/js/main.js"></script>
   </body>

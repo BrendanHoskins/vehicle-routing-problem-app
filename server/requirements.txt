@@ -4,3 +4,4 @@ ortools
 flask
 pandas
 openpyxl
+bson

@@ -157,37 +157,8 @@ class ExcelFileProcessor:
             'default_handlers': {}
         }
 
-    def process_file(self, file_data):
-        try:
-            results = {}
-            for file_type, file_info in file_data.items():
-
-                # Initialize results structure for this file type
-                results[file_type] = mapping_config['output_format'].copy()
-                
-                file_content = file_info['content']
-                selected_columns = file_info['selectedColumns']
-                column_mappings = file_info['columnMappings']
-                delimiter = file_info['delimiter']
-
-                csv_file = io.StringIO(file_content)
-                
-                # Process file in chunks
-                chunk_results = self._process_in_chunks(
-                    csv_file, 
-                    selected_columns, 
-                    column_mappings, 
-                    delimiter, 
-                    mapping_config
-                )
-                
-                results[file_type] = chunk_results
-
-            return results
-
-        except Exception as e:
-            print(f"Error processing CSV: {str(e)}")
-            return None
+    def process_file(self, file_content, mappings):
+        chunk_results = self._process_in_chunks()
 
     @staticmethod
     def _process_chunk(df_chunk, column_mappings, mapping_config, results):
@@ -244,8 +215,10 @@ class ExcelFileProcessor:
         try:
             df = pd.read_excel(io=file.stream, sheet_name=None, engine=None)
             mappings = {}
+            idx = 0
             for sheet_name, data in df.items():
-                mappings[sheet_name] = data.columns.tolist()
+                mappings[sheet_name] = { 'columns' : data.columns.tolist(), 'sheetIndex' : idx }
+                idx += 1
             return mappings
         except Exception as error:
             print('Error in parse_excel_file_and_return_sheets_and_columns:', error)
