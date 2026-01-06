@@ -3,9 +3,12 @@ from server.services.google_routes_api.get_route_matrix import create_distance_m
 from server.services.vrp.solve.setup_vrp import setup_vrp
 from server.services.vrp.solve.solve_vrp import solve_vrp
 from server.services.vrp.solve.format_vrp_solution import format_solution
+from server.db.db_utils import get_cached_file_and_cleanup_expired_files
 
-def enter_vrp_flow(files_data):
-    processed_csv_data = ExcelFileProcessor().process_file(files_data)
+def enter_vrp_flow(mappings, file_id):
+    filename, file_content = get_cached_file_and_cleanup_expired_files(file_id)
+    
+    processed_csv_data = ExcelFileProcessor().process_file(file_content, mappings)
 
     distance_matrix_data = create_distance_matrix(processed_csv_data['deliveries'], processed_csv_data['depots'], processed_csv_data['trucks'], processed_csv_data['pickups'])
 
